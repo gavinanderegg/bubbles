@@ -10,10 +10,16 @@
 
 @implementation BUBMyScene
 
+static const uint32_t worldCategory = 0x1 << 0;
+static const uint32_t bubbleCategory = 0x1 << 1;
+
 -(id)initWithSize:(CGSize)size {    
     if (self = [super initWithSize:size]) {
         self.backgroundColor = [SKColor colorWithRed:0.15 green:0.15 blue:0.3 alpha:1.0];
         self.physicsBody = [SKPhysicsBody bodyWithEdgeLoopFromRect:self.frame];
+        self.physicsBody.categoryBitMask = worldCategory;
+        self.physicsWorld.gravity = CGVectorMake(0.0, 0.0);
+        self.physicsWorld.contactDelegate = self;
     }
     return self;
 }
@@ -30,6 +36,8 @@
         sprite.physicsBody = [SKPhysicsBody bodyWithCircleOfRadius:sprite.size.width/2];
         sprite.physicsBody.dynamic = YES;
         sprite.physicsBody.affectedByGravity = NO;
+        sprite.physicsBody.categoryBitMask = bubbleCategory;
+        sprite.physicsBody.contactTestBitMask = bubbleCategory;
         
         sprite.position = touchLocation;
         
@@ -69,5 +77,10 @@
         }
     }
 }
+
+- (void)didBeginContact:(SKPhysicsContact *)contact {
+    NSLog(@"Bonk!");
+}
+
 
 @end
