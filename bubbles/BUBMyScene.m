@@ -20,17 +20,58 @@ static const uint32_t bubbleCategory = 0x1 << 1;
         self.physicsBody.categoryBitMask = worldCategory;
         self.physicsWorld.gravity = CGVectorMake(0.0, 0.0);
         self.physicsWorld.contactDelegate = self;
+        self.preBubbles = [NSMutableArray array];
     }
     return self;
 }
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
+    NSDate *now = [NSDate date];
+    
     for (UITouch *touch in touches) {
-        CGPoint touchLocation = [touch locationInNode:self];
-        
         SKTexture *bubbleTexture = [SKTexture textureWithImageNamed:@"bub"];
         bubbleTexture.filteringMode = SKTextureFilteringNearest;
         SKSpriteNode *sprite = [SKSpriteNode spriteNodeWithTexture:bubbleTexture size:CGSizeMake(32.0, 32.0)];
+        sprite.blendMode = SKBlendModeAdd;
+        sprite.alpha = 0.3;
+        CGPoint touchLocation = [touch locationInNode:self];
+        sprite.position = touchLocation;
+        
+        [self addChild:sprite];
+        
+        NSDictionary *preBubble = @{@"time": now, @"touch": touch, @"sprite": sprite};
+        [self.preBubbles addObject:preBubble];
+    }
+}
+
+-(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        for (NSDictionary *preBubble in self.preBubbles) {
+            if (preBubble[@"touch"] == touch) {
+                [preBubble[@"sprite"] setPosition:[touch locationInNode:self]];
+            }
+        }
+    }
+}
+
+-(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+    for (UITouch *touch in touches) {
+        SKSpriteNode *sprite;
+        NSMutableArray *toDelete = [NSMutableArray array];
+        for (NSDictionary *preBubble in self.preBubbles) {
+            if (preBubble[@"touch"] == touch) {
+                [preBubble[@"sprite"] removeFromParent];
+                [toDelete addObject:preBubble];
+                
+                SKTexture *bubbleTexture = [SKTexture textureWithImageNamed:@"bub"];
+                bubbleTexture.filteringMode = SKTextureFilteringNearest;
+                sprite = [SKSpriteNode spriteNodeWithTexture:bubbleTexture size:[preBubble[@"sprite"] size]];
+            }
+        }
+        [self.preBubbles removeObjectsInArray:toDelete];
+        
+        CGPoint touchLocation = [touch locationInNode:self];
+        
         sprite.blendMode = SKBlendModeAdd;
         sprite.alpha = 0.9;
         sprite.physicsBody = [SKPhysicsBody bodyWithCircleOfRadius:sprite.size.width/2];
@@ -68,13 +109,25 @@ static const uint32_t bubbleCategory = 0x1 << 1;
 -(void)update:(CFTimeInterval)currentTime {
     if ([self.children count] > 0) {
         for (SKSpriteNode *sprite in self.children) {
-            if (sprite.position.y > self.view.scene.size.height - 64.0) {
+            if ((sprite.position.y + (sprite.size.height / 2.0)) > self.view.scene.size.height - 64.0) {
                 SKAction *fadeOut = [SKAction fadeOutWithDuration:0.2];
                 [sprite runAction:fadeOut completion:^{
                     [sprite removeFromParent];
                 }];
             }
         }
+    }
+    
+    for (NSDictionary *preBubble in self.preBubbles) {
+        NSTimeInterval offset = 32.0 + ([preBubble[@"time"] timeIntervalSinceNow] * -100.0);
+        
+        if (offset > 180.0) {
+            offset = 180.0;
+        }
+        
+        CGFloat newSize = offset;
+        NSLog(@"%f", newSize);
+        [preBubble[@"sprite"] setSize:CGSizeMake(newSize, newSize)];
     }
 }
 

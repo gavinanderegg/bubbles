@@ -10,4 +10,6 @@
 
 @interface BUBMyScene : SKScene <SKPhysicsContactDelegate>
 
+@property (nonatomic, strong) NSMutableArray *preBubbles;
+
 @end
